@@ -140,17 +140,48 @@ public class BaseSteps extends BaseTest {
         wait.until(pageLoadCondition);
     }
 
-    @Step({"Send keys to element with key <key> and text <text>",
-            "<key> li elemente <text> degerini yaz"})
+    @Step({
+            "Send keys to element with key <key> and text <text>",
+            "<key> li elemente <text> degerini yaz"
+    })
     public void sendKeyWithDeger(String key, String text) {
         By byElement = getBy(key);
-        wait.until(ExpectedConditions.presenceOfElementLocated(byElement));
+
+        // 1) Element gerçekten görünür ve tıklanabilir olana kadar bekle
+        WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(byElement));
         waitForPageToLoad();
-        checkElementVisible2(getBy(key), 30);
+        checkElementVisible2(byElement, 30);
         waitElement(key);
-        WebElement element = driver.findElement(byElement);
-        element.clear();
-        element.sendKeys(text);
+
+        // 2) Biraz debug bilgisi toplayalım (loglarda görebil)
+        System.out.println("[DEBUG] tagName=" + element.getTagName()
+                + ", type=" + element.getAttribute("type")
+                + ", enabled=" + element.isEnabled()
+                + ", readOnly=" + element.getAttribute("readonly"));
+
+        // 3) Görünürlük için ortala
+        ((JavascriptExecutor) driver)
+                .executeScript("arguments[0].scrollIntoView({block:'center', inline:'center'})", element);
+
+        try {
+            // 4) Önce normal Selenium yolu
+            element.clear();
+            element.sendKeys(text);
+        } catch (org.openqa.selenium.InvalidElementStateException e) {
+            System.out.println("⚠ InvalidElementStateException aldı, JS ile yazmayı deniyorum.");
+
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // input'u temizle
+            js.executeScript("arguments[0].value='';", element);
+
+            // değeri JS ile set et + event tetikle
+            js.executeScript(
+                    "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new Event('input', {bubbles:true}));",
+                    element,
+                    text
+            );
+        }
     }
 
 }
