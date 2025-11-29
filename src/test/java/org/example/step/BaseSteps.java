@@ -150,12 +150,7 @@ public class BaseSteps extends BaseTest {
         waitElement(key);
         WebElement element = driver.findElement(byElement);
         element.clear();
-        if (text.startsWith("Deger_")) {
-            element.sendKeys(getValue(text));
-            System.out.println("text = " + getValue(text));
-        } else {
-            element.sendKeys(text);
-        }
+        element.sendKeys(text);
     }
 
 }
